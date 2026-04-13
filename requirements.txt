@@ -1,0 +1,6 @@
+torch
+torch_geometric
+transformers
+rdkit
+pandas
+scikit-learn
