@@ -10,15 +10,6 @@ BioTarget is a open-source CLI pipeline designed to accelerate the early stages 
 **[▶️ Watch the demo on YouTube](https://youtu.be/XHGxoba29H0)**
 
 The pipeline leverages **DrugCLIP** (a dual-encoder graph-text architecture) to act as a generative filter for toxicity and therapeutic intent, and **gnina** for structure-aware binding affinity predictions.
-
-After install, simply use it by one command:
-```bash
-python biotarget/cli.py run full \
-  --disease "Alzheimer" --top-ligands 20
-```
-
-For more info, visit [BioTarget on GitHub](https://github.com/homerquan/biotarget).
-
 ---
 
 ## 🚀 Quick install
