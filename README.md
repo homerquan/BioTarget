@@ -7,6 +7,8 @@
 
 BioTarget is a state-of-the-art, open-source CLI pipeline designed to accelerate the early stages of the AI drug-discovery workflow. It seamlessly links target discovery, 3D protein structure prediction, deep-learning-based contrastive molecular screening, and physics-based CNN docking into a single cohesive framework.
 
+**[▶️ Watch the demo on YouTube](https://youtu.be/XHGxoba29H0)**
+
 The pipeline leverages **DrugCLIP** (a dual-encoder graph-text architecture) to act as a generative filter for toxicity and therapeutic intent, and **gnina** for structure-aware binding affinity predictions.
 
 After install, simply use it by one command:
