@@ -30,7 +30,7 @@ def run_gnina(receptor_path, ligand_smiles):
 
         AllChem.MMFFOptimizeMolecule(mol, maxIters=10)
 
-        with tempfile.NamedTemporaryFile(suffix=".sdf", delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".sdf", delete=False, dir="/tmp") as f:
             ligand_sdf = f.name
 
         writer = Chem.SDWriter(ligand_sdf)
@@ -72,7 +72,7 @@ def run_gnina(receptor_path, ligand_smiles):
                 "-v",
                 f"{receptor_dir}:/receptor",
                 "-v",
-                f"{ligand_dir}:/ligand",
+                f"/tmp:/ligand",  # Workaround for tempfile being created in /tmp
                 "gnina/gnina",
                 "gnina",
                 "-r",
@@ -80,6 +80,8 @@ def run_gnina(receptor_path, ligand_smiles):
                 "-l",
                 f"/ligand/{ligand_name}",
                 "--score_only",
+                "--cnn",
+                "fast",
             ]
         )
 
@@ -88,7 +90,9 @@ def run_gnina(receptor_path, ligand_smiles):
         )  # Increased timeout for slow emulation
 
         for line in result.stdout.split("\n"):
-            if "CNN affinity" in line:
+            if "CNN_VS" in line:
+                pass  # gnina prints some lines starting with CNN_VS
+            elif "CNN affinity" in line or "CNNaffinity" in line:
                 parts = line.split()
                 for p in parts:
                     try:
@@ -96,10 +100,19 @@ def run_gnina(receptor_path, ligand_smiles):
                     except ValueError:
                         pass
 
+        # fallback parsing for other gnina versions
+        if "Affinity:" in result.stdout:
+            for line in result.stdout.split("\n"):
+                if "Affinity:" in line:
+                    try:
+                        return float(line.split()[1]), True
+                    except (ValueError, IndexError):
+                        pass
+
         if result.returncode != 0:
             print(f"\n[!] gnina failed with return code {result.returncode}")
             print(f"[!] stderr: {result.stderr.strip()}")
-            print(f"[!] stdout: {result.stdout.strip()[:200]}...")
+            print(f"[!] stdout: {result.stdout.strip()[:500]}...")
     except subprocess.TimeoutExpired:
         print("\n[!] gnina timed out (this is common on ARM CPU emulation).")
     except Exception as e:
