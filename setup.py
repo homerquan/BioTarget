@@ -55,7 +55,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="biotarget",
-    version="0.1.4",
+    version="0.1.5",
     description="BioTarget: AI Drug Discovery Pipeline. Requires NVIDIA GPU and Docker for GNINA docking. Run ./scripts/install_gnina_docker.sh before use.",
     long_description=long_description,
     long_description_content_type="text/markdown",
