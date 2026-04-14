@@ -25,6 +25,19 @@ For more info, visit [BioTarget on GitHub](https://github.com/homerquan/biotarge
 
 `pip install biotarget`
 
+**NOTE**: Install GNINA is strongly recommended (if you have a nvidia GPU)
+
+### 🔬 Ready for running
+
+```bash
+biotarget run full \
+  --disease "Alzheimer" \
+  --target-model hetero-gnn \
+  --structure-engine openfold3 \
+  --binding-engine gnina \
+  --top-ligands 10
+```
+
 ## Installation for customization
 
 BioTarget requires Python 3.9+ and PyTorch.
@@ -75,20 +88,6 @@ pip install git+https://github.com/homerquan/drugclip.git
 ```bash
 ~/.biotarget/openfold3_weights/
 ```
-
----
-
-## 🔬 Running the Pipeline
-
-```bash
-biotarget run full \
-  --disease "Alzheimer" \
-  --target-model hetero-gnn \
-  --structure-engine openfold3 \
-  --binding-engine gnina \
-  --top-ligands 10
-```
-
 ---
 
 ## 🧩 Pipeline Architecture
