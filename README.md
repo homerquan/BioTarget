@@ -42,51 +42,63 @@ Aggregates hits, flags highly toxic compounds (⚠️), and outputs a ranked man
 
 ## 🚀 Installation & Setup
 
-BioTarget operates as the primary orchestration CLI and relies on the standalone `drugclip` package for multi-modal embedding.
+BioTarget requires Python 3.9+ and leverages PyTorch for its deep learning models. Follow these steps to get a fully functioning environment.
+
+### 1. Base Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/biotarget.git
 cd biotarget
 
-# Create and activate virtual environment
+# Create and activate a Python virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Install dependencies (requires drugclip pip package)
+# Install the base dependencies
 pip install -r requirements.txt
-pip install git+https://github.com/your-org/drugclip.git
 ```
 
-### ⚙️ External Dependencies (Manual Installation)
+### 2. Install DrugCLIP (Required)
 
-Due to licensing and packaging constraints for massive C++ binaries, two core components must be installed manually for BioTarget to reach its full potential. The pipeline will gracefully fallback to mocked data if they are missing, preventing hard crashes.
+BioTarget relies on a specialized, multi-modal package called `drugclip` to handle the graph-text contrastive filtering.
 
-#### 1. GNINA (Physics-Based Binding Evaluation)
-For **Stage D** to execute high-accuracy CNN molecular docking, the `gnina` binary must be compiled or downloaded into your system `$PATH`.
 ```bash
-# For Linux users
+pip install git+https://github.com/your-org/drugclip.git
+```
+*(Note: If `drugclip` is not yet public, you will need the appropriate SSH keys or access tokens configured on your machine, or you must place the package locally in your `PYTHONPATH`)*
+
+### 3. External Dependencies (Highly Recommended)
+
+Due to licensing and packaging constraints for massive C++ binaries, two core components must be installed manually for BioTarget to reach its full potential. The pipeline will gracefully fallback to mocked/surrogate data if they are missing, preventing hard crashes.
+
+#### GNINA (Physics-Based Binding Evaluation)
+For **Stage D** to execute high-accuracy CNN molecular docking, the `gnina` binary must be available in your system `$PATH`. 
+
+**For Linux / WSL:**
+```bash
 wget https://github.com/gnina/gnina/releases/download/v1.0.3/gnina
 chmod +x gnina
 sudo mv gnina /usr/local/bin/
 ```
+**For macOS:**
+GNINA is primarily built for Linux. On macOS, you will either need to compile it from source using a Docker container, or rely on BioTarget's built-in surrogate binding scores if a native binary is not available.
 
-#### 2. OpenFold-3 Weights (Protein Structure Prediction)
-For **Stage B** to predict de novo 3D proteins, you must acquire the AlphaFold-3/OpenFold-3 `.pt` weights.
-* **Note:** These weights fall under a strict CC-BY-NC license and cannot be distributed via `pip`.
-* Please request research access via: [https://github.com/aqlaboratory/openfold](https://github.com/aqlaboratory/openfold)
-* Once granted, simply place the `.pt` parameter files in the following directory: `~/.biotarget/openfold3_weights/`
+#### OpenFold-3 / AlphaFold DB (Protein Structure Prediction)
+For **Stage B**, the pipeline attempts to fetch validated 3D structures.
+* By default, the pipeline has been upgraded to automatically pull `.pdb` files from the **AlphaFold Protein Structure Database** via their API.
+* If you specifically need to fold novel variants *de novo*, you will need OpenFold-3 weights. These fall under a strict CC-BY-NC license. Request access via [AQLaboratory/OpenFold](https://github.com/aqlaboratory/openfold) and place the `.pt` files in `~/.biotarget/openfold3_weights/`.
 
 ---
 
 ## 🔬 Running the BioTarget Pipeline
 
-The pipeline is invoked via the unified `biotarget.py` orchestrator. 
+The pipeline is invoked via the unified `biotarget/cli.py` orchestrator (or via the `biotarget` command if installed globally).
 
 To execute the end-to-end pipeline for a specific disease:
 
 ```bash
-python biotarget.py run full \
+python biotarget/cli.py run full \
   --disease "Alzheimer" \
   --target-model hetero-gnn \
   --structure-engine openfold3 \

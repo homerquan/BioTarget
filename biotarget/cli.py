@@ -1,8 +1,11 @@
 import argparse
 from biotarget.pipeline import run_pipeline
 
+
 def main():
-    parser = argparse.ArgumentParser(description="BioTarget - AI Drug Discovery Pipeline")
+    parser = argparse.ArgumentParser(
+        description="BioTarget - AI Drug Discovery Pipeline"
+    )
     parser.add_argument("command", choices=["run"])
     parser.add_argument("subcommand", choices=["full"])
     parser.add_argument("--disease", type=str, required=True)
@@ -19,8 +22,10 @@ def main():
         run_pipeline(
             args.disease,
             checkpoint_path=None,
+            top_targets=args.top_targets,
             top_ligands=args.top_ligands,
         )
+
 
 if __name__ == "__main__":
     main()
