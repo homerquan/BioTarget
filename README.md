@@ -21,7 +21,11 @@ For more info, visit [BioTarget on GitHub](https://github.com/homerquan/biotarge
 
 ---
 
-## 🚀 Installation & Setup
+## 🚀 Quick install
+
+`pip install biotarget`
+
+## Installation for customization
 
 BioTarget requires Python 3.9+ and PyTorch.
 
