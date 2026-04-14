@@ -11,10 +11,11 @@ The pipeline leverages **DrugCLIP** (a dual-encoder graph-text architecture) to 
 
 After install, simply use it by one command:
 ```bash
-pip install biotarget
-biotarget run full \
+python biotarget/cli.py run full \
   --disease "Alzheimer" --top-ligands 20
 ```
+
+For more info, visit [BioTarget on GitHub](https://github.com/homerquan/biotarget).
 
 ---
 
@@ -55,7 +56,7 @@ BioTarget requires Python 3.9+ and leverages PyTorch for its deep learning model
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/biotarget.git
+git clone https://github.com/homerquan/biotarget.git
 cd biotarget
 
 # Create and activate a Python virtual environment
@@ -71,24 +72,22 @@ pip install -r requirements.txt
 BioTarget relies on a specialized, multi-modal package called `drugclip` to handle the graph-text contrastive filtering.
 
 ```bash
-pip install git+https://github.com/your-org/drugclip.git
+pip install git+https://github.com/homerquan/drugclip.git
 ```
 *(Note: If `drugclip` is not yet public, you will need the appropriate SSH keys or access tokens configured on your machine, or you must place the package locally in your `PYTHONPATH`)*
 
 ### 3. External Dependencies (Required)
 
-Due to licensing and packaging constraints for massive C++ binaries, `gnina` must be installed manually for BioTarget to run.
+Due to licensing and packaging constraints for massive C++ binaries, `gnina` is automatically installed during the pip setup process if you have an NVIDIA GPU. 
 
 #### GNINA (Physics-Based Binding Evaluation)
-For **Stage D** to execute high-accuracy CNN molecular docking, the `gnina` binary is **required** to be in your system `$PATH`. BioTarget will not run without it.
+For **Stage D** to execute high-accuracy CNN molecular docking, the `gnina` binary is **required**. BioTarget will automatically download and install `gnina` when you install the package using pip, provided you meet the hardware requirements.
 
-**For Linux / WSL / macOS:**
-```bash
-wget https://github.com/gnina/gnina/releases/download/v1.0.3/gnina
-chmod +x gnina
-sudo mv gnina /usr/local/bin/
-```
-*(Note: If you are on macOS and the pre-compiled binary does not work, you will need to compile it from source or use a Docker container.)*
+**Hardware Requirements:**
+* **NVIDIA GPU is mandatory** for `gnina` to run.
+* `nvcc` or `nvidia-smi` must be accessible in your `$PATH` during the `pip install` process. If an NVIDIA GPU is not detected, the installation will fail with an error.
+
+*(Note: Docker or macOS fallbacks are no longer supported. You must run this pipeline on a Linux machine with an NVIDIA GPU.)*
 
 #### OpenFold-3 / AlphaFold DB (Protein Structure Prediction)
 For **Stage B**, the pipeline attempts to fetch validated 3D structures.

@@ -38,7 +38,7 @@ def run_gnina(receptor_path, ligand_smiles):
         writer.close()
 
         cmd = [gnina_bin, "-r", receptor_path, "-l", ligand_sdf, "--score_only"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
         for line in result.stdout.split("\n"):
             if "CNN affinity" in line:
@@ -48,8 +48,15 @@ def run_gnina(receptor_path, ligand_smiles):
                         return float(p), True
                     except ValueError:
                         pass
-    except Exception:
-        pass
+
+        if result.returncode != 0:
+            print(f"\n[!] gnina failed with return code {result.returncode}")
+            print(f"[!] stderr: {result.stderr.strip()}")
+            print(f"[!] stdout: {result.stdout.strip()[:200]}...")
+    except subprocess.TimeoutExpired:
+        print("\n[!] gnina timed out.")
+    except Exception as e:
+        print(f"\n[!] gnina execution exception: {e}")
     finally:
         if ligand_sdf and os.path.exists(ligand_sdf):
             os.remove(ligand_sdf)
@@ -68,20 +75,19 @@ def stage_d_evaluate_binding_and_tox(
     )
 
     # Check for GNINA explicitly
+    import sys
+
     if not shutil.which("gnina"):
         print(
             "[!] Error: The 'gnina' high-performance molecular docking engine was not found in your system $PATH."
         )
         print(
-            "[*] gnina is a massive compiled C++ binary and cannot be reliably packaged into a python pip install."
+            "[*] gnina is a massive compiled C++ binary that requires an NVIDIA GPU and CUDA."
         )
-        print("[*] gnina is a required dependency. Please install it manually via:")
+        print("[*] To install gnina manually if the pip install script failed:")
         print("    wget https://github.com/gnina/gnina/releases/download/v1.0.3/gnina")
         print("    chmod +x gnina")
         print("    sudo mv gnina /usr/local/bin/")
-        print("[*] Please restart the application after installing gnina.\n")
-        import sys
-
         sys.exit(1)
 
     print(
