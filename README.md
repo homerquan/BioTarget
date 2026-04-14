@@ -177,4 +177,4 @@ While this framework establishes an AI-driven core, it is intentionally modular 
 
 * **Generative Expansion:** Improve the generated candidate subset with an active autoregressive or diffusion-based generative model—or an evolutionary algorithm—to produce more diverse candidates and enable closed-loop optimization.
 
-* **Enhanced Simulation:** Evaluate the final shortlist of candidates using high-fidelity simulations to more accurately predict effectiveness and potential side effects.
+* **Enhanced Simulation:** Evaluate the final shortlist of candidates using high-fidelity simulations to more accurately predict effectiveness and potential side effects e.g., Molecular dynamics (MD) (https://en.wikipedia.org/wiki/Molecular_dynamics)[https://en.wikipedia.org/wiki/Molecular_dynamics]
