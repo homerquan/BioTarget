@@ -78,16 +78,30 @@ pip install git+https://github.com/homerquan/drugclip.git
 
 ### 3. External Dependencies (Required)
 
-Due to licensing and packaging constraints for massive C++ binaries, `gnina` is automatically installed during the pip setup process if you have an NVIDIA GPU. 
+Due to licensing and packaging constraints for massive C++ binaries, `gnina` requires **Docker** to be installed and running on your system, and it also requires an **NVIDIA GPU** for high-performance physics-based molecular docking.
 
-#### GNINA (Physics-Based Binding Evaluation)
-For **Stage D** to execute high-accuracy CNN molecular docking, the `gnina` binary is **required**. BioTarget will automatically download and install `gnina` when you install the package using pip, provided you meet the hardware requirements.
+#### GNINA (Physics-Based Binding Evaluation via Docker)
+For **Stage D** to execute high-accuracy CNN molecular docking, BioTarget automatically manages `gnina` using its official Docker container. You do not need to install the `gnina` binary manually; the pipeline will automatically pull and execute `gnina/gnina:latest`.
 
-**Hardware Requirements:**
-* **NVIDIA GPU is mandatory** for `gnina` to run.
-* `nvcc` or `nvidia-smi` must be accessible in your `$PATH` during the `pip install` process. If an NVIDIA GPU is not detected, the installation will fail with an error.
+**Hardware & Software Requirements:**
+* **Docker is mandatory**: You must have Docker installed and running on your host machine.
+* **NVIDIA GPU**: Required for high-performance execution. The `nvidia-container-toolkit` must be configured for Docker.
+* **ARM Architecture Support**: If you are running BioTarget on an ARM machine (like `aarch64` / Apple Silicon / Graviton), BioTarget will automatically pull the `linux/amd64` Docker image and execute `gnina` via Docker's x86_64 emulation (QEMU). Emulation does not support GPU pass-through, so ARM systems will execute `gnina` on the emulated CPU, which is significantly slower but fully functional. 
 
-*(Note: Docker or macOS fallbacks are no longer supported. You must run this pipeline on a Linux machine with an NVIDIA GPU.)*
+**IMPORTANT: Pre-Installation Setup**
+Before running the BioTarget pipeline, you **must** configure the GNINA docker container. We have provided an automated script that handles architecture detection, pulls the correct image, configures QEMU emulation for ARM devices, and verifies GPU pass-through on x86 machines.
+
+Run the following setup script:
+```bash
+chmod +x scripts/install_gnina_docker.sh
+./scripts/install_gnina_docker.sh
+```
+
+To ensure your environment is ready, you can manually verify Docker is working with GPUs (on x86_64 systems):
+```bash
+docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi
+```
+*(Note: macOS fallbacks are no longer supported. You must run this pipeline on a Linux machine with an NVIDIA GPU and Docker installed.)*
 
 #### OpenFold-3 / AlphaFold DB (Protein Structure Prediction)
 For **Stage B**, the pipeline attempts to fetch validated 3D structures.

@@ -2,9 +2,6 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 import subprocess
 import sys
-import os
-import urllib.request
-import stat
 
 
 class CustomInstallCommand(install):
@@ -27,21 +24,28 @@ class CustomInstallCommand(install):
             )
             sys.exit(1)
 
-        # Download and install gnina
-        bin_dir = os.path.join(sys.prefix, "bin")
-        os.makedirs(bin_dir, exist_ok=True)
-        gnina_path = os.path.join(bin_dir, "gnina")
-
-        gnina_url = "https://github.com/gnina/gnina/releases/download/v1.0.3/gnina"
-        print(f"Downloading gnina from {gnina_url} to {gnina_path}...")
+        # Ensure Docker is installed
         try:
-            urllib.request.urlretrieve(gnina_url, gnina_path)
-            st = os.stat(gnina_path)
-            os.chmod(gnina_path, st.st_mode | stat.S_IEXEC)
-            print("gnina downloaded and made executable.")
-        except Exception as e:
-            sys.stderr.write(f"Failed to download gnina: {e}\n")
+            subprocess.check_output(["docker", "--version"])
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            sys.stderr.write("Error: docker is required to run the gnina container.\n")
             sys.exit(1)
+
+        # Pull gnina docker image
+        print("Pulling gnina docker image...")
+        try:
+            import platform
+
+            if platform.machine().lower() in ["aarch64", "arm64"]:
+                subprocess.check_call(
+                    ["docker", "pull", "--platform", "linux/amd64", "gnina/gnina"]
+                )
+            else:
+                subprocess.check_call(["docker", "pull", "gnina/gnina"])
+        except subprocess.CalledProcessError:
+            print(
+                "Warning: could not pull gnina/gnina docker image. It will be pulled on first run."
+            )
 
         install.run(self)
 
@@ -52,7 +56,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="biotarget",
     version="0.1.3",
-    description="BioTarget: AI Drug Discovery Pipeline. Requires NVIDIA GPU (nvcc) for GNINA docking.",
+    description="BioTarget: AI Drug Discovery Pipeline. Requires NVIDIA GPU and Docker for GNINA docking. Run ./scripts/install_gnina_docker.sh before use.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="BioTarget Contributors",

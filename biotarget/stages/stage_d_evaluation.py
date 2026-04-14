@@ -4,6 +4,8 @@ import shutil
 import tempfile
 import subprocess
 import numpy as np
+import sys
+import platform
 from torch_geometric.data import Batch
 from tqdm import tqdm
 from rdkit import Chem
@@ -12,11 +14,9 @@ from biotarget.core.utils import normalize_01
 
 
 def run_gnina(receptor_path, ligand_smiles):
-    gnina_bin = shutil.which("gnina")
-    if not gnina_bin:
-        raise RuntimeError(
-            "gnina binary not found in PATH. Please install gnina manually."
-        )
+    # Verify docker
+    if not shutil.which("docker"):
+        raise RuntimeError("docker not found in PATH. Please install docker.")
 
     ligand_sdf = None
     try:
@@ -37,8 +37,55 @@ def run_gnina(receptor_path, ligand_smiles):
         writer.write(mol)
         writer.close()
 
-        cmd = [gnina_bin, "-r", receptor_path, "-l", ligand_sdf, "--score_only"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        # Mount directories
+        receptor_dir = os.path.dirname(os.path.abspath(receptor_path))
+        receptor_name = os.path.basename(receptor_path)
+
+        # GNINA has issues with multi-MODEL PDB files from AlphaFold, so we clean it
+        cleaned_receptor = os.path.join(receptor_dir, f"cleaned_{receptor_name}")
+        with open(receptor_path, "r") as fin:
+            with open(cleaned_receptor, "w") as fout:
+                for line in fin:
+                    if line.startswith("MODEL") or line.startswith("ENDMDL"):
+                        continue
+                    fout.write(line)
+        cleaned_receptor_name = os.path.basename(cleaned_receptor)
+
+        ligand_dir = os.path.dirname(os.path.abspath(ligand_sdf))
+        ligand_name = os.path.basename(ligand_sdf)
+
+        cmd = [
+            "docker",
+            "run",
+            "--rm",
+        ]
+
+        # Handle ARM emulation vs x86_64 GPU execution
+        if platform.machine().lower() in ["aarch64", "arm64"]:
+            # On ARM we must override the nvidia_entrypoint.sh which strictly fails without a GPU on x86 container
+            cmd.extend(["--platform", "linux/amd64", "--entrypoint", ""])
+        else:
+            cmd.extend(["--gpus", "all"])
+
+        cmd.extend(
+            [
+                "-v",
+                f"{receptor_dir}:/receptor",
+                "-v",
+                f"{ligand_dir}:/ligand",
+                "gnina/gnina",
+                "gnina",
+                "-r",
+                f"/receptor/{cleaned_receptor_name}",
+                "-l",
+                f"/ligand/{ligand_name}",
+                "--score_only",
+            ]
+        )
+
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=300
+        )  # Increased timeout for slow emulation
 
         for line in result.stdout.split("\n"):
             if "CNN affinity" in line:
@@ -54,7 +101,7 @@ def run_gnina(receptor_path, ligand_smiles):
             print(f"[!] stderr: {result.stderr.strip()}")
             print(f"[!] stdout: {result.stdout.strip()[:200]}...")
     except subprocess.TimeoutExpired:
-        print("\n[!] gnina timed out.")
+        print("\n[!] gnina timed out (this is common on ARM CPU emulation).")
     except Exception as e:
         print(f"\n[!] gnina execution exception: {e}")
     finally:
@@ -74,20 +121,11 @@ def stage_d_evaluate_binding_and_tox(
         f"[*] Loaded Target Receptor: {target_protein['gene']} from Stage B ({receptor_path})"
     )
 
-    # Check for GNINA explicitly
-    import sys
-
-    if not shutil.which("gnina"):
+    if not shutil.which("docker"):
+        print("[!] Error: 'docker' was not found in your system $PATH.")
         print(
-            "[!] Error: The 'gnina' high-performance molecular docking engine was not found in your system $PATH."
+            "[*] gnina runs as a container and requires docker to be installed and running."
         )
-        print(
-            "[*] gnina is a massive compiled C++ binary that requires an NVIDIA GPU and CUDA."
-        )
-        print("[*] To install gnina manually if the pip install script failed:")
-        print("    wget https://github.com/gnina/gnina/releases/download/v1.0.3/gnina")
-        print("    chmod +x gnina")
-        print("    sudo mv gnina /usr/local/bin/")
         sys.exit(1)
 
     print(
