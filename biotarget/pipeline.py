@@ -81,6 +81,12 @@ def run_pipeline(disease, checkpoint_path=None, top_targets=3, top_ligands=10):
         candidates_smiles, candidate_graphs, structures, model, DEVICE
     )
 
+    with open(report_path, "a") as f:
+        f.write("## Stage D: Evaluation\n")
+        f.write(
+            f"Evaluated binding affinity (gnina) and toxicity (DrugCLIP) for {len(evaluation_results)} candidates.\n\n"
+        )
+
     # Stage E: Ranking and Reporting
     stage_e_reporting(disease, evaluation_results, top_ligands, report_path=report_path)
 
