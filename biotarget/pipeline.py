@@ -1,5 +1,9 @@
-import torch
 import os
+
+# Must set this before importing transformers or drugclip to prevent broken tensorflow loading
+os.environ["USE_TF"] = "0"
+
+import torch
 import uuid
 from drugclip.models.align_model import DrugCLIP
 from drugclip.utils.model_utils import get_default_checkpoint
@@ -30,6 +34,8 @@ def run_pipeline(disease, checkpoint_path=None, top_targets=3, top_ligands=10):
 
     # Load DrugCLIP Model
     try:
+        os.environ["USE_TF"] = "0"
+
         model = DrugCLIP(
             hidden_channels=64, out_dim=128, text_model="distilbert-base-uncased"
         )
@@ -38,10 +44,10 @@ def run_pipeline(disease, checkpoint_path=None, top_targets=3, top_ligands=10):
         model = model.to(DEVICE)
         model.eval()
     except Exception as e:
-        print(
-            f"[!] Warning: Could not properly load model, continuing with initialized weights. {e}"
-        )
-        pass
+        print(f"[!] Error: Could not load DrugCLIP model. {e}")
+        import sys
+
+        sys.exit(1)
 
     # Stage A: Disease to Protein Ranking
     targets = stage_a_target_discovery(disease)
