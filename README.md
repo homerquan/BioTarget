@@ -21,94 +21,109 @@ For more info, visit [BioTarget on GitHub](https://github.com/homerquan/biotarge
 
 ---
 
-## 🎯 The Pipeline Architecture
-
-BioTarget executes a 5-stage workflow designed for rapid, iterative drug discovery:
-
-### 1. Stage A: Disease $\rightarrow$ Target Ranking
-Retrieves and ranks disease-relevant protein targets by querying extensive biomedical knowledge graphs.
-* **Sources:** Open Targets Platform, DisGeNET, STRING, Reactome.
-* **Methodology:** Ranks protein targets via heterogeneous Graph Neural Networks (GNN) and biological pathway evidence mapping.
-
-### 2. Stage B: Protein Structure Generation
-Fetches or predicts the 3D conformation of the selected target proteins.
-* **Primary:** Experimental structures (PDB).
-* **Generator:** [OpenFold-3](https://github.com/aqlaboratory/openfold) for de novo prediction of variants, mutants, or unmapped isoforms.
-
-### 3. Stage C: Generative AI & Candidate Extraction
-Instead of blindly docking massive lookup libraries (like ChEMBL), BioTarget employs a highly optimized generative filtering approach.
-* **DrugCLIP Guidance:** Thousands of virtual compounds are geometrically folded on the CPU array. `DrugCLIP` encodes a textual representation of the disease and isolates the Top 10× geometrically/semantically aligned molecular structures.
-
-### 4. Stage D: Multi-Objective Binding & Toxicity Evaluation
-Evaluates candidates simultaneously for efficacy (physics/CNN docking) and safety (latent space contrastive geometry).
-* **Binding Evaluation (`gnina`)**: Generates 3D structural Spatial Data Files (`.sdf`) via RDKit and calls the actual `gnina` subprocess. Evaluates ligand-receptor binding affinity using Convolutional Neural Networks on voxelized binding sites.
-* **Toxicity Penalty (`DrugCLIP`)**: Computes semantic embedding for clinical failure and calculates the normalized Cosine Similarity against the ligand's structural embedding.
-
-### 5. Stage E: Ranking & Reporting
-* **Final Ranking**: $\mathcal{S}_{final} = \mathcal{S}_{binding} - (0.5 \cdot \mathcal{S}_{tox})$
-Aggregates hits, flags highly toxic compounds (⚠️), and outputs a ranked manifest of candidate SMILES ready for Molecular Dynamics (MD) refinement via OpenMM.
-
----
-
 ## 🚀 Installation & Setup
 
-BioTarget requires Python 3.9+ and leverages PyTorch for its deep learning models. Follow these steps to get a fully functioning environment.
+BioTarget requires Python 3.9+ and PyTorch.
 
-### 1. Base Installation
+### 0. Install GNINA (Docker-based dependency)
 
-```bash
-# Clone the repository
-git clone https://github.com/homerquan/biotarget.git
-cd biotarget
+Before installing Python dependencies, set up the GNINA Docker environment:
 
-# Create and activate a Python virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install the base dependencies
-pip install -r requirements.txt
-```
-
-### 2. Install DrugCLIP (Required)
-
-BioTarget relies on a specialized, multi-modal package called `drugclip` to handle the graph-text contrastive filtering.
-
-```bash
-pip install git+https://github.com/homerquan/drugclip.git
-```
-*(Note: If `drugclip` is not yet public, you will need the appropriate SSH keys or access tokens configured on your machine, or you must place the package locally in your `PYTHONPATH`)*
-
-### 3. External Dependencies (Required)
-
-Due to licensing and packaging constraints for massive C++ binaries, `gnina` requires **Docker** to be installed and running on your system, and it also requires an **NVIDIA GPU** for high-performance physics-based molecular docking.
-
-#### GNINA (Physics-Based Binding Evaluation via Docker)
-For **Stage D** to execute high-accuracy CNN molecular docking, BioTarget automatically manages `gnina` using its official Docker container. You do not need to install the `gnina` binary manually; the pipeline will automatically pull and execute `gnina/gnina:latest`.
-
-**Hardware & Software Requirements:**
-* **Docker is mandatory**: You must have Docker installed and running on your host machine.
-* **NVIDIA GPU**: Required for high-performance execution. The `nvidia-container-toolkit` must be configured for Docker.
-* **ARM Architecture Support**: If you are running BioTarget on an ARM machine (like `aarch64` / Apple Silicon / Graviton), BioTarget will automatically pull the `linux/amd64` Docker image and execute `gnina` via Docker's x86_64 emulation (QEMU). Emulation does not support GPU pass-through, so ARM systems will execute `gnina` on the emulated CPU, which is significantly slower but fully functional. 
-
-**IMPORTANT: Pre-Installation Setup**
-Before running the BioTarget pipeline, you **must** configure the GNINA docker container. We have provided an automated script that handles architecture detection, pulls the correct image, configures QEMU emulation for ARM devices, and verifies GPU pass-through on x86 machines.
-
-Run the following setup script:
 ```bash
 chmod +x scripts/install_gnina_docker.sh
 ./scripts/install_gnina_docker.sh
 ```
 
-To ensure your environment is ready, you can manually verify Docker is working with GPUs (on x86_64 systems):
-```bash
-docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi
-```
-*(Note: macOS fallbacks are no longer supported. You must run this pipeline on a Linux machine with an NVIDIA GPU and Docker installed.)*
+**Requirements:**
+- Docker installed and running  
+- NVIDIA GPU recommended  
+- `nvidia-container-toolkit` for GPU acceleration  
 
-#### OpenFold-3 / AlphaFold DB (Protein Structure Prediction)
-For **Stage B**, the pipeline attempts to fetch validated 3D structures.
-* By default, the pipeline has been upgraded to automatically pull `.pdb` files from the **AlphaFold Protein Structure Database** via their API.
-* If you specifically need to fold novel variants *de novo*, you will need OpenFold-3 weights. These fall under a strict CC-BY-NC license. Request access via [AQLaboratory/OpenFold](https://github.com/aqlaboratory/openfold) and place the `.pt` files in `~/.biotarget/openfold3_weights/`.
+---
+
+### 1. Base Installation
+
+```bash
+git clone https://github.com/homerquan/biotarget.git
+cd biotarget
+
+python3 -m venv .venv
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+---
+
+### 2. Install DrugCLIP
+
+```bash
+pip install git+https://github.com/homerquan/drugclip.git
+```
+
+---
+
+### 3. Protein Structure Sources
+
+- Default: AlphaFold Protein Structure Database  
+- Optional: OpenFold weights placed in:
+
+```bash
+~/.biotarget/openfold3_weights/
+```
+
+---
+
+## 🔬 Running the Pipeline
+
+```bash
+biotarget run full \
+  --disease "Alzheimer" \
+  --target-model hetero-gnn \
+  --structure-engine openfold3 \
+  --binding-engine gnina \
+  --top-ligands 10
+```
+
+---
+
+## 🧩 Pipeline Architecture
+
+### Stage A: Disease → Target Ranking
+
+- Data: Open Targets, DisGeNET, STRING, Reactome  
+- Method: heterogeneous graph neural networks  
+
+---
+
+### Stage B: Protein Structure Generation
+
+- PDB structures when available  
+- OpenFold predictions otherwise  
+
+---
+
+### Stage C: Candidate Generation
+
+- Text to candidate drug molecules(a graph). We are using a trained model `DrugCLIP` (Project page) [https://github.com/homerquan/DrugCLIP]  
+- Produces filtered candidate set  
+
+---
+
+### Stage D: Binding and Toxicity Evaluation
+
+- GNINA docking (CNN-based scoring)  
+- Embedding-based toxicity proxy  
+
+---
+
+### Stage E: Ranking
+
+Final score:
+
+S_final = S_binding - 0.5 * S_tox
+
+Outputs ranked candidate molecules for downstream simulation. **Note**: the binding score is rough estimate, only useful to filter out bad candidates.
 
 ---
 
