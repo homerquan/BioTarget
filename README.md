@@ -171,8 +171,10 @@ Rank  | Final  | Gnina (pK_d) | Tox Penalty   | SMILES
 
 ---
 
-## 🛠 Model Extensibility (The Roadmap)
+## 🛠 Model Extensibility (Roadmap)
 
-While this framework establishes the AI-driven core, it is intentionally modular to support the integration of downstream biophysics tools:
-* **Generative Expansion:** Swapping the simulated candidate subset for an active autoregressive/diffusion generative model to perform closed-loop optimization.
-* **MD Refinement:** Automated hand-off of the top $K$ hits to OpenMM for physical stability analysis and short MD relaxation.
+While this framework establishes an AI-driven core, it is intentionally modular to support integration with downstream biophysics tools:
+
+* **Generative Expansion:** Improve the generated candidate subset with an active autoregressive or diffusion-based generative model—or an evolutionary algorithm—to produce more diverse candidates and enable closed-loop optimization.
+
+* **Enhanced Simulation:** Evaluate the final shortlist of candidates using high-fidelity simulations to more accurately predict effectiveness and potential side effects.
