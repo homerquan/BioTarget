@@ -14,7 +14,9 @@ from biotarget.core.utils import normalize_01
 def run_gnina(receptor_path, ligand_smiles):
     gnina_bin = shutil.which("gnina")
     if not gnina_bin:
-        return np.random.uniform(4.0, 9.5), False
+        raise RuntimeError(
+            "gnina binary not found in PATH. Please install gnina manually."
+        )
 
     ligand_sdf = None
     try:
@@ -68,18 +70,19 @@ def stage_d_evaluate_binding_and_tox(
     # Check for GNINA explicitly
     if not shutil.which("gnina"):
         print(
-            "[!] Note: The 'gnina' high-performance molecular docking engine was not found in your system $PATH."
+            "[!] Error: The 'gnina' high-performance molecular docking engine was not found in your system $PATH."
         )
         print(
             "[*] gnina is a massive compiled C++ binary and cannot be reliably packaged into a python pip install."
         )
-        print("[*] To utilize true physics-based CNN scoring, please install it via:")
+        print("[*] gnina is a required dependency. Please install it manually via:")
         print("    wget https://github.com/gnina/gnina/releases/download/v1.0.3/gnina")
         print("    chmod +x gnina")
         print("    sudo mv gnina /usr/local/bin/")
-        print(
-            "[*] For this run, BioTarget will utilize deterministic surrogate affinity scores.\n"
-        )
+        print("[*] Please restart the application after installing gnina.\n")
+        import sys
+
+        sys.exit(1)
 
     print(
         f"[*] Computing Toxicity penalties for {len(candidates)} candidates via DrugCLIP..."
@@ -130,7 +133,7 @@ def stage_d_evaluate_binding_and_tox(
 
     if not used_real_gnina:
         print(
-            "[!] Note: 'gnina' binary not found in PATH or failed to parse receptor PDB. Using deterministic surrogate docking scores."
+            "[!] Note: 'gnina' failed to parse receptor PDB or execute properly. Using deterministic surrogate docking scores."
         )
 
     return results

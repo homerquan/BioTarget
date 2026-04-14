@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="biotarget",
-    version="0.1.0",
+    version="0.1.1",
     description="End-to-End AI Drug Discovery Pipeline powered by DrugCLIP",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -17,7 +17,7 @@ setup(
         "torch_geometric>=2.3",
         "pandas",
         "tqdm",
-        "rdkit"
+        "rdkit",
     ],
     entry_points={
         "console_scripts": [

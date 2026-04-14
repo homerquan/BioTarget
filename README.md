@@ -9,6 +9,13 @@ BioTarget is a state-of-the-art, open-source CLI pipeline designed to accelerate
 
 The pipeline leverages **DrugCLIP** (a dual-encoder graph-text architecture) to act as a generative filter for toxicity and therapeutic intent, and **gnina** for structure-aware binding affinity predictions.
 
+After install, simply use it by one command:
+```bash
+pip install biotarget
+biotarget run full \
+  --disease "Alzheimer" --top-ligands 20
+```
+
 ---
 
 ## 🎯 The Pipeline Architecture
@@ -68,21 +75,20 @@ pip install git+https://github.com/your-org/drugclip.git
 ```
 *(Note: If `drugclip` is not yet public, you will need the appropriate SSH keys or access tokens configured on your machine, or you must place the package locally in your `PYTHONPATH`)*
 
-### 3. External Dependencies (Highly Recommended)
+### 3. External Dependencies (Required)
 
-Due to licensing and packaging constraints for massive C++ binaries, two core components must be installed manually for BioTarget to reach its full potential. The pipeline will gracefully fallback to mocked/surrogate data if they are missing, preventing hard crashes.
+Due to licensing and packaging constraints for massive C++ binaries, `gnina` must be installed manually for BioTarget to run.
 
 #### GNINA (Physics-Based Binding Evaluation)
-For **Stage D** to execute high-accuracy CNN molecular docking, the `gnina` binary must be available in your system `$PATH`. 
+For **Stage D** to execute high-accuracy CNN molecular docking, the `gnina` binary is **required** to be in your system `$PATH`. BioTarget will not run without it.
 
-**For Linux / WSL:**
+**For Linux / WSL / macOS:**
 ```bash
 wget https://github.com/gnina/gnina/releases/download/v1.0.3/gnina
 chmod +x gnina
 sudo mv gnina /usr/local/bin/
 ```
-**For macOS:**
-GNINA is primarily built for Linux. On macOS, you will either need to compile it from source using a Docker container, or rely on BioTarget's built-in surrogate binding scores if a native binary is not available.
+*(Note: If you are on macOS and the pre-compiled binary does not work, you will need to compile it from source or use a Docker container.)*
 
 #### OpenFold-3 / AlphaFold DB (Protein Structure Prediction)
 For **Stage B**, the pipeline attempts to fetch validated 3D structures.
